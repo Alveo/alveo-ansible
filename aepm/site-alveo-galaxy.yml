@@ -1,0 +1,6 @@
+---
+
+- hosts: alveo-galaxy
+  remote_user: ubuntu
+  roles:
+    - alveo-galaxy

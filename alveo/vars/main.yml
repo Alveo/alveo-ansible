@@ -1,0 +1,60 @@
+---
+
+selinux_state: disabled
+
+iptables_enable_https: true
+
+postgresql_users:
+  - name: hcsvlab
+    pass: galaxy
+    encrypted: no
+
+postgresql_databases:
+  - name: hcsvlab
+
+postgresql_user_privileges:
+  - name: hcsvlab
+    db: hcsvlab
+    priv: ALL
+
+rbenv:
+  env: user
+  version: v0.4.0
+  ruby_version: 2.1.4
+rbenv_users:
+  - { name: "devel", home: "/home/devel/", comment: "Devel user" }
+
+passenger_version: 4.0.53
+
+alveo_root: /home/devel/alveo
+alveo_git_tag: HEAD
+alveo_rails_env: production
+
+# alveo_admin_user_email moved to secrets.yml
+# alveo_admin_user_first_name moved to secrets.yml
+# alveo_admin_user_last_name moved to secrets.yml
+# alveo_admin_user_password moved to secrets.yml
+
+alveo_cert: /etc/pki/tls/certs/ca.crt
+alveo_cert_key: /etc/pki/tls/private/ca.key
+alveo_cert_subject: /C=AU/ST=NSW/L=Sydney/O=Intersect Australia/OU=Engineering/CN={{ansible_hostname}}
+
+alveo_catalina_home: /usr/share/tomcat6
+alveo_solr_home: /home/devel/solr
+alveo_activemq_home: /home/devel/apache-activemq-{{ activemq_version }}
+
+activemq_version: 5.8.0
+activemq_download_url: http://archive.apache.org/dist/activemq/apache-activemq/5.8.0/apache-activemq-5.8.0-bin.tar.gz
+
+tomcat6_java_opts:
+  - "-XX:+CMSClassUnloadingEnabled"
+  - "-XX:+CMSPermGenSweepingEnabled"
+  - "-DSOLR_HOME={{ alveo_solr_home }}"
+
+# tomcat6_catalina_opts: 
+#   - "-Dcom.sun.management.jmxremote.port=9000"
+#   - "-Dcom.sun.management.jmxremote.ssl=false"
+#   - "-Dcom.sun.management.jmxremote.authenticate=false"
+
+# tomcat6 needs to start after solr is configured
+tomcat6_enabled: false

@@ -1,0 +1,13 @@
+---
+
+rabbitmq:
+  url:
+    path: https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v3_5_4
+    basename: rabbitmq-server-3.5.4-1.noarch.rpm
+
+user:
+  home: /home/devel
+
+workers:
+  home: /home/devel/alveo-workers
+

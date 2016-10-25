@@ -1,0 +1,21 @@
+---
+catalina:
+  src: https://archive.apache.org/dist/tomcat/tomcat-8/v8.0.32/bin/apache-tomcat-8.0.32.tar.gz
+  install_dir: /opt/apache-tomcat-8.0.32
+  home: /opt/tomcat
+
+alveo:
+  home: /home/devel/alveo
+  repo: https://github.com/IntersectAustralia/hcsvlab.git
+  version: HEAD
+
+sesame:
+  data_dir: /mnt/data/sesame
+
+java:
+  home: /usr/java/jdk1.8.0_74
+  xms: 6G
+  xmx: 6G
+  xnss: 2G # NewSize start
+  xnsx: 2G # NewSize max
+  xmss: 1G # MetaspaceSize

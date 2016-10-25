@@ -1,0 +1,226 @@
+---
+
+- include: ./system_dependencies.yml
+
+- name: Include secrets
+  include_vars: secrets.yml
+  no_log: true
+
+- name: Create galaxy user
+  user: >
+    name={{galaxy.user}}
+  sudo: yes
+
+- name: Move the old Galaxy
+  command: >
+    mv {{galaxy.dest}} {{galaxy.dest}}-old
+  sudo: yes
+  run_once: true
+
+- name: Pull Galaxy from Github
+  git: >
+    repo={{galaxy.repo}}
+    dest={{galaxy.dest}}
+    version={{galaxy.version}}
+  sudo: yes
+
+- name: Change directoy permissions
+  file: >
+    path={{galaxy.dest}}
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+    recurse=yes
+  sudo: yes
+
+- name: Create softlink to galaxy user's home directory
+  file: >
+    src={{galaxy.dest}}
+    path={{galaxy.home}}
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+    state=link
+  sudo: yes
+
+- name: Create a folder for galaxy tool dependencies
+  file: >
+    path={{galaxy.home}}/tool_dependencies
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+    state=directory
+  sudo: yes
+
+- name: Create a folder for logging
+  file: >
+    path={{galaxy.home}}/log
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+    state=directory
+  sudo: yes
+
+- name: Copy Alveo welcome page
+  copy: >
+    src=alveo.html
+    dest={{galaxy.home}}/static/alveo.html
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+  sudo: yes
+
+- name: Copy Alveo logo
+  copy: >
+    src=alveo_logo.png
+    dest={{galaxy.home}}/static/images/alveo_logo.png
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+  sudo: yes
+
+- name: Copy Postgres config
+  copy: >
+    src=pg_hba.conf
+    dest={{postgres.conf_path}}
+    owner=postgres
+    group=postgres
+  sudo: yes
+
+- name: Restart Postgres and start on boot
+  service: >
+    name=postgresql
+    enabled=yes
+    state=restarted
+  sudo: yes
+
+- include: ./postfix.yml
+
+- name: Create Galaxy DB
+  postgresql_db: >
+    name={{postgres.galaxy.db}}
+    login_user=postgres
+
+- name: Create Toolshed DB
+  postgresql_db: >
+    name={{postgres.toolshed.db}}
+    login_user=postgres
+
+- name: Create Galaxy DB user
+  postgresql_user: >
+    name={{postgres.galaxy.user}}
+    password={{postgres.galaxy.password}}
+    db={{postgres.galaxy.db}}
+    priv=ALL
+
+- name: Create Toolshed DB user
+  postgresql_user: >
+    name={{postgres.toolshed.user}}
+    password={{postgres.toolshed.password}}
+    db={{postgres.galaxy.db}}
+    priv=ALL
+
+- name: Copy Galaxy config
+  template: >
+    src=galaxy.ini.j2
+    dest={{galaxy.home}}/config/galaxy.ini
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+  sudo: yes
+
+- name: Copy Toolshed config
+  template: >
+    src=tool_shed.ini.j2
+    dest={{galaxy.home}}/config/tool_shed.ini
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+  sudo: yes
+
+- name: Copy Tool sheds config
+  template: >
+    src=tool_sheds_conf.xml.j2
+    dest={{galaxy.home}}/config/tool_sheds_conf.xml
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+  sudo: yes
+
+- name: Copy tool config
+  copy: >
+    src=tool_conf.xml
+    dest={{galaxy.home}}/config/tool_conf.xml
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+  sudo: yes
+
+- name: Copy shed tool config
+  command: >
+    mv {{galaxy.home}}/config/shed_tool_conf.xml.sample {{galaxy.home}}/config/shed_tool_conf.xml
+    creates={{galaxy.home}}/config/shed_tool_conf.xml
+  sudo: yes
+
+- name: Change shed tool config owner
+  file: >
+    path={{galaxy.home}}/config/shed_tool_conf.xml
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+  sudo: yes
+
+- name: Copy migrated tools config
+  command: >
+    mv {{galaxy.home}}/config/migrated_tools_conf.xml.sample {{galaxy.home}}/config/migrated_tools_conf.xml
+    creates={{galaxy.home}}/config/migrated_tools_conf.xml
+  sudo: yes
+
+- name: Change migrated tools config owner
+  file: >
+    path={{galaxy.home}}/config/migrated_tools_conf.xml
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+  sudo: yes
+
+- name: Copy shed tool data table config
+  command: >
+    mv {{galaxy.home}}/config/shed_tool_data_table_conf.xml.sample {{galaxy.home}}/config/shed_tool_data_table_conf.xml
+    creates={{galaxy.home}}/config/shed_tool_data_table_conf.xml
+  sudo: yes
+
+- name: Change shed tool data table config owner
+  file: >
+    path={{galaxy.home}}/config/shed_tool_data_table_conf.xml
+    owner={{galaxy.user}}
+    group={{galaxy.group}}
+  sudo: yes
+
+- name: Setup logrotate
+  template: >
+    src=galaxy.logrotate.j2
+    dest=/etc/logrotate.d/galaxy
+  sudo: yes
+
+- name: Copy startup scripts
+  template: >
+    src=galaxy.j2
+    dest=/etc/init.d/galaxy
+    owner=root
+    group=root
+    mode=a+rx
+  sudo: yes
+
+- name: Copy startup scripts
+  template: >
+    src=galaxy-toolshed.j2
+    dest=/etc/init.d/galaxy-toolshed
+    owner=root
+    group=root
+    mode=a+rx
+  sudo: yes
+
+- name: Start Galaxy and start on boot
+  service: >
+    name=galaxy
+    enabled=yes
+    state=restarted
+  sudo: yes
+
+- name: Start Toolshed and start on boot
+  service: >
+    name=galaxy-toolshed
+    enabled=yes
+    state=restarted
+  sudo: yes
+
+# TODO: restore DBs from backups

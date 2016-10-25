@@ -1,0 +1,158 @@
+---
+
+- include: ./system_dependencies.yml
+
+- name: Ensure correct permissions on devel's home directory
+  file: >
+    path=/home/devel
+    owner=devel
+    group=devel
+    mode=0755
+
+- name: Setup environment variables in .bashrc
+  template: >
+    src=bashrc.j2
+    dest=/home/devel/.bashrc
+
+- name: Pull alveo source code from git
+  git: >
+    repo=https://github.com/IntersectAustralia/hcsvlab.git
+    dest={{alveo_root}}
+    version={{alveo_git_tag}}
+    accept_hostkey=yes
+
+- name: Setup Alveo web config
+  template: > 
+    src=alveo_web_config.yml.j2
+    dest={{alveo_root}}/config/hcsvlab-web_config.yml
+
+- name: Configure mailer default URL (hosted)
+  lineinfile: >
+    dest={{alveo_root}}/config/environments/production.rb
+    regexp="  config.action_mailer.default_url_options = { :host => 'app.alveo.edu.au' }"
+    line='  config.action_mailer.default_url_options = {:host => "{{ansible_fqdn}}"}'
+  when: facter_puppetversion is defined
+
+- name: Configure mailer default URL (non-hosted)
+  lineinfile: >
+    dest={{alveo_root}}/config/environments/production.rb
+    regexp="  config.action_mailer.default_url_options = { :host => 'app.alveo.edu.au' }"
+    line='  config.action_mailer.default_url_options = {:host => "{{ansible_default_ipv4.address}}"}'
+  when: facter_puppetversion is not defined
+
+- include: ./activemq.yml
+
+- name: Generate self-signed certificates
+  command: >
+    openssl req -x509 -subj "{{alveo_cert_subject}}" -nodes -days 365 -newkey rsa:2048 -keyout {{alveo_cert_key}} -out {{alveo_cert}}
+  notify: restart apache
+  sudo: yes
+
+- name: Setup alveo httpd config
+  template: >
+    src=alveo.httpd.conf.j2
+    dest=/etc/httpd/conf.d/hcsvlab.conf
+  notify: restart apache
+  sudo: yes
+
+- name: Determine alveo git hash
+  command: >
+    git log -1 --pretty='format:%h'
+    chdir={{alveo_root}}
+  register: alveo_git_hash
+
+- name: Write Alveo git hash
+  template: >
+    src=_tag.html.haml.j2
+    dest={{alveo_root}}/app/views/shared/_tag.html.haml
+
+- name: Setup httpd logrotate
+  template: >
+    src=httpd.logrotate.j2
+    dest=/etc/logrotate.d/httpd.logrotate
+  sudo: yes
+
+- name: Setup alveo logrotate
+  template: >
+    src=alveo.logrotate.j2
+    dest=/etc/logrotate.d/alveo.logrotate
+  sudo: yes
+
+- name: Create contributed annotations directory
+  file: >
+    path=/data/contributed_annotations/
+    state=directory
+  sudo: yes
+
+- name: Ensure that data directory has the correct permissions
+  file: >
+    path=/data
+    owner=devel
+    group=devel
+    recurse=yes
+  sudo: yes
+
+  # Tell bundler to use the system libraries of lxml2 when building nokogiri
+- name: Configure installation of nokogiri gem
+  command: >
+    bundle config build.nokogiri --use-system-libraries
+    chdir={{alveo_root}}
+
+  # We need to define where the pg_config executable is before we build the pg gem
+- name: Configure installation of pg gem
+  command: >
+    bundle config build.pg --with-pg-config={{postgresql_bin_directory}}/pg_config
+    chdir={{alveo_root}}
+
+- name: Bundle install
+  command: >
+    bundle install
+    chdir={{alveo_root}}
+  notify: restart apache
+
+- name: Setup the database
+  shell: >
+    RAILS_ENV={{alveo_rails_env}} bundle exec rake db:create db:migrate db:seed
+    chdir={{alveo_root}}
+
+- name: Copy script to create initial users
+  template: >
+    src=create_initial_user.rb.j2
+    dest=/tmp/alveo_create_initial_user.rb
+
+- name: Create initial users
+  shell: >
+    RAILS_ENV={{alveo_rails_env}} bundle exec rails runner "eval(File.read '/tmp/alveo_create_initial_user.rb')"
+    chdir={{alveo_root}}
+
+- name: Update poller.rb
+  template: >
+    src=poller.rb.j2
+    dest={{alveo_root}}/lib/poller.rb
+
+- name: Setup supervisor
+  template: >
+    src=supervisor.conf.j2
+    dest={{supervisor_conf_path}}/alveo.conf
+  notify: restart supervisor
+  sudo: yes
+
+- include: ./solr.yml
+
+- name: Ensure tomcat6 is running.
+  service:
+    name: tomcat6
+    state: started
+    enabled: yes
+  sudo: yes
+
+- name: Ingest licences
+  shell: >
+    RAILS_ENV={{alveo_rails_env}} bundle exec rake fedora:ingest_licences
+    chdir={{alveo_root}}
+
+- name: Precompile assets
+  shell: >
+    RAILS_ENV={{alveo_rails_env}} bundle exec rake assets:precompile
+    chdir={{alveo_root}}
+  notify: restart apache

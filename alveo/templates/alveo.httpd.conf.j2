@@ -1,0 +1,30 @@
+LoadModule ssl_module modules/mod_ssl.so
+Listen 443
+
+<VirtualHost *:80>
+  {# If Puppet is installed we assume it is a managed VM, so redirect to the fqdn. #}
+  {% if facter_puppetversion is defined %}
+  Redirect permanent / https://{{ansible_fqdn}}/
+  {% else %}
+  Redirect permanent / https://{{ansible_default_ipv4.address}}/
+  {% endif %}
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName {{ansible_hostname}}
+    DocumentRoot {{alveo_root}}/public
+    
+    RailsEnv {{alveo_rails_env}}
+
+    SSLEngine on
+    SSLCertificateFile {{alveo_cert}}
+    SSLCertificateKeyFile {{alveo_cert_key}}
+
+    # Uploads of up to 100MB permitted
+    LimitRequestBody 100000000
+    <Directory {{alveo_root}}/public>
+            AllowOverride all
+            Options -MultiViews
+            Header set Access-Control-Allow-Origin http://json-ld.org
+    </Directory>
+</VirtualHost>

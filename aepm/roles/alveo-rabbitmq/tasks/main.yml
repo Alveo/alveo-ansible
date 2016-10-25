@@ -1,0 +1,111 @@
+---
+
+- name: Include secrets
+  include_vars: secrets.yml
+  no_log: true
+
+- name: Disable iptables
+  command: >
+    iptables -I INPUT -j ACCEPT
+  sudo: yes
+
+- name: Download RabbitMQ
+  get_url: >
+    url={{rabbitmq.url.path}}/{{rabbitmq.url.basename}}
+    dest={{user.home}}/{{rabbitmq.url.basename}}
+
+- name: Install RabbitMQ
+  yum: >
+    name={{user.home}}/{{rabbitmq.url.basename}}
+    state=present
+  sudo: yes
+
+- name: Start RabbitMQ on boot
+  service: >
+    name=rabbitmq-server
+    state=restarted
+    enabled=yes
+  sudo: yes
+
+- name: Install RabbitMQ web interface
+  command: >
+    rabbitmq-plugins enable rabbitmq_management
+  sudo: yes
+
+- name: Add an Alveo vhost
+  rabbitmq_vhost: name=/alveo state=present
+  sudo: yes
+
+- name: Create Worker user accounts
+  rabbitmq_user: >
+    user={{item.value.name}}
+    password={{item.value.pass}}
+    vhost=/alveo
+    configure_priv=.*
+    read_priv=.*
+    write_priv=.*
+    tags=administrator
+    state=present
+  with_dict: users
+  sudo: yes
+
+- name: Add RVM GPG key
+  command: >
+    gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+    creates=/home/devel/.rvm
+
+# TODO: Get rid of all this RVM stuff and use
+#       the RbEnv role
+
+- name: Install RVM
+  shell: >
+    \curl -sSL https://get.rvm.io | bash -s stable
+    creates=/home/devel/.rvm
+
+- name: Install Ruby
+  shell: >
+    source /home/devel/.rvm/scripts/rvm &&
+    rvm install ruby-2.2.1
+    creates=/home/devel/.rvm/rubies/ruby-2.2.1
+    executable=/bin/bash
+  become: yes
+
+- name: Set the default gemset
+  shell: >
+    source /home/devel/.rvm/scripts/rvm &&
+    rvm use ruby-2.2.1@alveo-workers --create --default
+    creates=/home/devel/.rvm/gems/ruby-2.2.1@alveo-workers
+    executable=/bin/bash
+
+- name: Install Bundler
+  shell: >
+    source /home/devel/.rvm/scripts/rvm && gem install bundler
+    executable=/bin/bash
+
+- name: Install Bundler
+  shell: >
+    source /home/devel/.rvm/scripts/rvm &&
+    gem install bundler
+    executable=/bin/bash
+    creates=/home/devel/.rvm/gems/ruby-2.2.1@hcsvlab/gems/bundler-1.10.6
+
+# - name: Configure installation of pg gem
+#   shell: >
+#     source /home/devel/.rvm/scripts/rvm &&
+#     bundle config build.pg --with-pg-config={{postgresql_bin_directory}}/pg_config
+#     executable=/bin/bash
+
+# - name: Configure installation of nokogiri gem
+#   shell: >
+#     source /home/devel/.rvm/scripts/rvm &&
+#     bundle config build.nokogiri --use-system-libraries
+#     executable=/bin/bash
+#     chdir={{alveo.home}}
+
+- name: Install gem bundle
+  shell: >
+    source /home/devel/.rvm/scripts/rvm &&
+    bundle install
+    executable=/bin/bash
+    chdir={{workers.home}}
+

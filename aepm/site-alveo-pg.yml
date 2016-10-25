@@ -1,0 +1,6 @@
+---
+
+- hosts: alveo-pg
+  remote_user: devel
+  roles:
+    - alveo-pg

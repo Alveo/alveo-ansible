@@ -1,0 +1,13 @@
+---
+
+dependencies:
+  - selinux
+  - epel
+  - iptables
+  - postgresql
+  - rbenv
+  - apache
+  - passenger
+  - openjdk
+  - tomcat6
+  - supervisor

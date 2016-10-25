@@ -1,0 +1,26 @@
+---
+
+- name: Download ActiveMQ.
+  get_url: >
+    url={{ activemq_download_url }}
+    dest=/home/devel/activemq-{{ activemq_version }}.tar.gz
+
+- name: Extract ActiveMQ
+  unarchive: >
+    src=/home/devel/activemq-{{ activemq_version }}.tar.gz
+    dest=/home/devel
+    copy=no
+    creates={{ alveo_activemq_home }}
+  sudo: yes
+
+- name: Ensure correct permissions on the activemq directory.
+  file: >
+    path={{ alveo_activemq_home }}
+    owner=devel
+    group=devel
+    recurse=yes
+  sudo: yes
+
+- name: Configure ActiveMQ
+  shell: >
+    cp -rp {{ alveo_root }}/activemq_conf/activemq.xml {{ alveo_activemq_home }}/conf/activemq.xml

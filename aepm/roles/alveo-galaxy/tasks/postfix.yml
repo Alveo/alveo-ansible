@@ -1,0 +1,20 @@
+---
+
+- name: Set Postfix option hostname
+  debconf: name=postfix question="postfix/mailname" value="galaxy.alveo.edu.au" vtype="string"
+  sudo: yes
+
+- name: Set Postfix option type as internet site
+  debconf: name=postfix question="postfix/main_mailer_type" value="'Internet Site'" vtype="string"
+  sudo: yes
+
+- name: Install postfix
+  apt: name=postfix state=present
+  sudo: yes
+
+- name: Restart Postfix and start on boot
+  service: >
+    name=postfix
+    enabled=yes
+    state=restarted
+  sudo: yes

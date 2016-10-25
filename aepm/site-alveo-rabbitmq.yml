@@ -1,0 +1,6 @@
+---
+
+- hosts: alveo-rabbitmq
+  remote_user: devel
+  roles:
+    - alveo-rabbitmq

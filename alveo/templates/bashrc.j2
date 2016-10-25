@@ -1,0 +1,13 @@
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+# User specific aliases and functions
+export RAILS_ENV=production
+export ACTIVEMQ_HOME={{ alveo_activemq_home }}
+export CATALINA_HOME={{ alveo_catalina_home }}
+export FEDORA_HOME=/opt/fedora
+export SOLR_HOME={{ alveo_solr_home }}

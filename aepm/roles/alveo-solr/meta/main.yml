@@ -1,0 +1,5 @@
+---
+
+dependencies:
+  - openjdk
+  - tomcat6

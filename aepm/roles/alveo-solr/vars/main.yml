@@ -1,0 +1,21 @@
+---
+
+solr:
+  home: /mnt/data/solr
+
+catalina:
+  home: /usr/share/tomcat6
+
+alveo:
+  home: /home/devel/alveo
+  repo: https://github.com/IntersectAustralia/hcsvlab.git
+  version: HEAD
+
+# tomcat6 needs to start after solr is configured
+tomcat6_enabled: false
+
+tomcat6_catalina_port: 80
+
+tomcat6_xms: 3G
+tomcat6_xmx: 6G
+tomcat6_max_perm_size: 512m

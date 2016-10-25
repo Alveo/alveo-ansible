@@ -1,0 +1,130 @@
+---
+
+- name: Include secrets
+  include_vars: secrets.yml
+  no_log: true
+
+- name: Disable iptables
+  command: >
+    iptables -I INPUT -j ACCEPT
+  become: yes
+
+- name: Get Java
+  get_url: >
+    url=http://download.oracle.com/otn-pub/java/jdk/8u74-b02/jdk-8u74-linux-x64.rpm
+    dest=/home/devel
+    headers="Cookie: oraclelicense=accept-securebackup-cookie"
+    validate_certs=no
+
+- name: Install Java
+  yum: >
+    name=/home/devel/jdk-8u74-linux-x64.rpm
+    state=present
+  become: yes
+
+- name: Unzip Tomcat
+  unarchive: >
+    copy=no
+    src={{catalina.src}}
+    dest=/opt
+    owner=devel
+    group=devel
+  become: yes
+
+- name: Setup Tomcat environment variables
+  template: >
+    src=setenv.sh.j2
+    dest={{catalina.install_dir}}/bin/setenv.sh
+
+- name: Unzip Apache Commmons
+  unarchive: >
+    copy=no
+    src={{catalina.install_dir}}/bin/commons-daemon-native.tar.gz
+    dest={{catalina.install_dir}}/bin
+    creates={{catalina.install_dir}}/bin/commons-daemon-1.0.15-native-src
+
+- name: Configure Apache Commons
+  shell: >
+    ./configure --with-java={{java.home}}
+    chdir={{catalina.install_dir}}/bin/commons-daemon-1.0.15-native-src/unix/
+    creates={{catalina.install_dir}}/bin/commons-daemon-1.0.15-native-src/unix/jsvc
+
+- name: Build Apache Commons
+  shell: >
+    make
+    chdir={{catalina.install_dir}}/bin/commons-daemon-1.0.15-native-src/unix/
+    creates={{catalina.install_dir}}/bin/commons-daemon-1.0.15-native-src/unix/jsvc
+
+- name: Copy Apache Commons binary
+  command: >
+    cp {{catalina.install_dir}}/bin/commons-daemon-1.0.15-native-src/unix/jsvc {{catalina.install_dir}}/bin/
+    creates={{catalina.install_dir}}/bin/jsvc
+
+- name: Copy init.d script
+  template: >
+    src=tomcat.j2
+    dest=/etc/init.d/tomcat
+    mode=a+x
+  become: yes
+
+- name: Copy tomcat-users.xml to Catalina config
+  template: >
+    src=tomcat-users.xml.j2
+    dest={{catalina.install_dir}}/conf/tomcat-users.xml
+  become_user: tomcat
+
+- name: Create Tomcat User
+  user: >
+    name=tomcat
+    createhome=no
+    shell=/sbin/nologin
+  become: yes
+
+- name: Give ownership to tomcat user
+  file: >
+    path={{catalina.install_dir}}
+    owner=tomcat
+    group=tomcat
+    recurse=yes
+  become: yes
+
+- name: Softlink Catalina home
+  file: >
+    path={{catalina.home}}
+    src={{catalina.install_dir}}
+    state=link
+    owner=tomcat
+    group=tomcat
+  become: yes
+
+- name: Create Sesame data directory
+  file: >
+    path={{sesame.data_dir}}
+    owner=tomcat
+    group=tomcat
+    state=directory
+  become: yes
+
+- name: Download Sesame
+  unarchive: >
+    copy=no
+    src=http://sourceforge.net/projects/sesame/files/Sesame%202/2.7.16/openrdf-sesame-2.7.16-sdk.zip
+    dest=/opt
+    owner=tomcat
+    group=tomcat
+  become: yes
+
+- name: Deploy Sesame
+  shell: >
+    cp /opt/openrdf-sesame-2.7.16/war/* {{catalina.home}}/webapps/
+  become: yes
+
+# TODO: Logrotation
+
+# NOTE: Startup script isn't displaying status
+- name: Start Tomcat
+  service: >
+    name=tomcat
+    state=started
+    enabled=yes
+  become: yes

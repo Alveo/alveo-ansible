@@ -1,0 +1,98 @@
+---
+
+- name: Include secrets
+  include_vars: secrets.yml
+  no_log: true
+
+- name: Disable iptables
+  command: >
+    iptables -I INPUT -j ACCEPT
+  become: yes
+
+- include: ./system_dependencies.yml
+
+- name: Setup environment variables in .bashrc
+  template: >
+    src=bashrc.j2
+    dest=/home/devel/.bashrc
+
+- name: Pull alveo source code from git
+  git: >
+    repo={{alveo.repo}}
+    dest={{alveo.home}}
+    version={{alveo.version}}
+    accept_hostkey=yes
+
+- name: Create solr directory
+  file: >
+    path={{solr.home}}
+    state=directory
+  become: yes
+
+- name: Copy jar files that Tomcat will need for Solr 4.3 logging
+  shell: >
+    cp -r {{alveo.home}}/solr_conf/lib/ext/* {{catalina.home}}/lib/
+  become: yes
+
+- name: Copy Solr core
+  shell: >
+    cp -r {{alveo.home}}/solr_conf/hcsvlab {{solr.home}}/
+    creates={{solr.home}}/hcsvlab
+  become: yes
+
+- name: Copy alveo-solr.xml to Catalina home
+  template: >
+    src=alveo-solr.xml.j2
+    dest={{catalina.home}}/conf/Catalina/localhost/solr.xml
+  become: yes
+
+- name: Copy tomcat-users.xml to Catalina config
+  template: >
+    src=tomcat-users.xml.j2
+    dest={{catalina.home}}/conf/tomcat-users.xml
+  become: yes
+
+- name: Disable logging to stdout
+  copy: >
+    src=logging.properties
+    dest={{catalina.home}}/conf/logging.properties
+    owner=tomcat
+    group=tomcat
+  become: yes
+
+- name: Rotate logs
+  template: >
+    src=tomcat-logrotate.j2
+    dest=/etc/logrotate.d/tomcat6
+  become: yes
+
+- name: Configure Solr
+  shell: >
+    cp {{item.src}} {{item.dest}}
+  with_items:
+    - {src: '{{alveo.home}}/solr_conf/conf/schema.xml', dest: '{{solr.home}}/hcsvlab/solr/hcsvlab-core/conf/schema.xml'}
+    - {src: '{{alveo.home}}/solr_conf/conf/solrconfig.xml', dest: '{{solr.home}}/hcsvlab/solr/hcsvlab-core/conf/solrconfig.xml'}
+  become: yes
+
+- name: Ensure that solr directory has the correct permissions
+  file: > 
+    path={{solr.home}}
+    recurse=yes
+    owner=tomcat
+    group=tomcat
+  become: yes
+
+- name: Ensure that tomcat directory has the correct permissions
+  file: > 
+    path={{catalina.home}}
+    recurse=yes
+    owner=tomcat
+    group=tomcat
+  become: yes
+
+- name: Ensure tomcat6 is running.
+  service:
+    name: tomcat6
+    state: started
+    enabled: yes
+  become: yes

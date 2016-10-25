@@ -1,0 +1,16 @@
+[program:activemq]
+command={{alveo_activemq_home}}/bin/activemq console
+directory={{alveo_activemq_home}}
+user=devel
+stdout_logfile={{supervisor_log_path}}/active_mq.log
+redirect_stderr=true
+priority=1
+
+[program:a13g_pollers]
+command=/home/devel/.rbenv/shims/ruby {{alveo_root}}/lib/poller.rb
+directory={{alveo_root}}
+user=devel
+stdout_logfile={{supervisor_log_path}}/a13g_pollers.log
+redirect_stderr=true
+environment=RAILS_ENV="production"
+priority=2

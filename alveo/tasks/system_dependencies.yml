@@ -1,0 +1,18 @@
+---
+
+- name: Install required system dependencies
+  yum: pkg={{item}} state=installed
+  sudo: yes
+  with_items:
+    - automake
+    - gcc
+    - gcc-c++
+    - git
+    - libxml2
+    - libxml2-devel
+    - libxslt
+    - libxslt-devel
+    - mod_xsendfile
+    - sqlite-devel
+    - ImageMagick
+    - ImageMagick-devel

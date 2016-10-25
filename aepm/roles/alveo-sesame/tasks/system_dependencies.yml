@@ -1,0 +1,9 @@
+---
+
+- name: Install required system dependencies
+  yum: pkg={{item}} state=installed
+  sudo: yes
+  with_items:
+    - git
+    - libselinux-python
+    - "@Development tools"

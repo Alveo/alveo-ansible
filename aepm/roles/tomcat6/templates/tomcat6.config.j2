@@ -1,0 +1,9 @@
+JAVA_OPTS="$JAVA_OPTS -Xms{{ tomcat6_xms }} -Xmx{{ tomcat6_xmx }} -XX:MaxPermSize={{ tomcat6_max_perm_size }}"
+
+{% for java_opt in tomcat6_java_opts %}
+JAVA_OPTS="$JAVA_OPTS {{java_opt}}"
+{% endfor %}
+
+{% for catalina_opt in tomcat6_catalina_opts %}
+CATALINA_OPTS="$CATALINA_OPTS {{catalina_opt}}"
+{% endfor %}

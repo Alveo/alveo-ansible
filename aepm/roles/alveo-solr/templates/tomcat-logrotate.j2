@@ -1,0 +1,18 @@
+{{catalina.home}}/catalina.out {
+    copytruncate
+    weekly
+    rotate 12
+    compress
+    missingok
+    create 0644 tomcat tomcat
+}
+
+{{catalina.home}}/logs/*.log {
+    rotate 12
+    weekly
+    copytruncate
+    missingok
+    notifempty
+    compress
+    dateext
+}

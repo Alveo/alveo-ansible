@@ -1,0 +1,24 @@
+---
+
+galaxy:
+  user: galaxy
+  group: galaxy
+  repo: https://github.com/galaxyproject/galaxy.git
+  dest: /mnt/galaxy/galaxy-app
+  home: /home/galaxy/galaxy
+  version: v15.05
+  email_from: Alveo Galaxy <galaxy-no-reply@galaxy.alveo.edu.au>
+  id_secret: USING THE DEFAULT IS NOT SECURE!
+  welcome_url: /static/alveo.html
+  # admin_users moved to secrets
+
+postgres:
+  conf_path: /etc/postgresql/9.3/main/
+  galaxy:
+    db: galaxy
+    user: galaxy
+    password: galaxy
+  toolshed:
+    db: toolshed
+    user: toolshed
+    password: toolshed
