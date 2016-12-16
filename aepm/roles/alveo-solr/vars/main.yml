@@ -8,7 +8,7 @@ catalina:
 
 alveo:
   home: /home/devel/alveo
-  repo: https://github.com/IntersectAustralia/hcsvlab.git
+  repo: https://github.com/Alveo/hcsvlab.git
   version: HEAD
 
 # tomcat6 needs to start after solr is configured

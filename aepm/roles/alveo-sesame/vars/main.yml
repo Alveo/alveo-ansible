@@ -6,7 +6,7 @@ catalina:
 
 alveo:
   home: /home/devel/alveo
-  repo: https://github.com/IntersectAustralia/hcsvlab.git
+  repo: https://github.com/Alveo/hcsvlab.git
   version: HEAD
 
 sesame:

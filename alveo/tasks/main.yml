@@ -16,7 +16,7 @@
 
 - name: Pull alveo source code from git
   git: >
-    repo=https://github.com/IntersectAustralia/hcsvlab.git
+    repo=https://github.com/Alveo/hcsvlab.git
     dest={{alveo_root}}
     version={{alveo_git_tag}}
     accept_hostkey=yes

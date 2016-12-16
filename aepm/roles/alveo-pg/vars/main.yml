@@ -2,7 +2,7 @@
 
 alveo:
   home: /home/devel/alveo
-  repo: https://github.com/IntersectAustralia/hcsvlab.git
+  repo: https://github.com/Alveo/hcsvlab.git
   version: HEAD
   rails_env: production
   server: alveo.example.com
