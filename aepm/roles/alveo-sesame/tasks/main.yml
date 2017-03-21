@@ -9,6 +9,8 @@
     iptables -I INPUT -j ACCEPT
   become: yes
 
+- include: ./system_dependencies.yml
+
 - name: Get Java
   get_url: >
     url=http://download.oracle.com/otn-pub/java/jdk/8u74-b02/jdk-8u74-linux-x64.rpm
