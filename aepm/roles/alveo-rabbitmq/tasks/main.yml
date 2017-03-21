@@ -9,6 +9,17 @@
     iptables -I INPUT -j ACCEPT
   sudo: yes
 
+- name: Download EPEL
+  get_url: >
+    url=http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+    dest={{user.home}}/epel-release-6-8.noarch.rpm
+
+- name: Install EPEL
+  yum: >
+    name={{user.home}}/epel-release-6-8.noarch.rpm
+    state=present
+  sudo: yes
+    
 - name: Download RabbitMQ
   get_url: >
     url={{rabbitmq.url.path}}/{{rabbitmq.url.basename}}
