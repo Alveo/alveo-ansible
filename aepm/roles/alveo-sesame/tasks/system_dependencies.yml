@@ -6,5 +6,7 @@
   with_items:
     - git
     - unzip
+    - tar
+    - gzip
     - libselinux-python
     - "@Development tools"
