@@ -108,7 +108,7 @@
 - name: Download Sesame
   unarchive: >
     copy=no
-    src=http://sourceforge.net/projects/sesame/files/Sesame%202/2.7.16/openrdf-sesame-2.7.16-sdk.zip
+    src=https://svwh.dl.sourceforge.net/project/sesame/Sesame%202/2.7.16/openrdf-sesame-2.7.16-sdk.zip
     dest=/opt
     owner=tomcat
     group=tomcat
