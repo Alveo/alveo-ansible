@@ -1,16 +1,26 @@
 #!/bin/bash
 
-MACHINES="alveo-solr alveo-sesame alveo-web alveo-pg alveo-rabbitmq"
+# MACHINES="alveo-web alveo-pg alveo-rabbitmq" # alveo-solr alveo-sesame
+MACHINES="alveo-solr alveo-sesame"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-HOSTSFILE=$DIR/../local.yml
+INVENTORY=$DIR/../local.yml
 
-echo "" > $HOSTSFILE
+rm -f $INVENTORY && touch $INVENTORY
 
 for m in $MACHINES; do
 	sudo lxc-destroy -f -n $m
 
-	sudo lxc-create -t centos -n $m
+	# We want CentOS 6 for
+	# CentOS 7 for pg, rabbitmq, 
+	if [ "$m" == "alveo-pg" ]; then
+		sudo lxc-create -n $m -t centos -- -R 7
+	elif [ "$m" == "alveo-rabbitmq" ]; then
+		sudo lxc-create -n $m -t centos -- -R 7
+	else
+		sudo lxc-create -n $m -t centos -- -R 6
+	fi
+
 	sudo lxc-start -n $m
 
 	ip="-"
@@ -22,10 +32,9 @@ for m in $MACHINES; do
 	pass=$(sudo cat /var/lib/lxc/$m/tmp_root_pass)
 	echo "Temp root password is $pass"
 
-	echo "" >> $HOSTSFILE
-	# Each host gets its own group
-	echo "[$m]" >> $HOSTSFILE
-	echo -n "$m ansible_ssh_user=devel ansible_ssh_host=$ip" >> $HOSTSFILE
+	# Each host gets its own group, and the names match
+	echo "[$m]" >> $INVENTORY
+	echo -n "$m ansible_ssh_user=devel ansible_ssh_host=$ip" >> $INVENTORY
 
 	root=/var/lib/lxc/$m/rootfs/
 
@@ -42,11 +51,19 @@ for m in $MACHINES; do
 	# Password-less sudo for devel
 	sudo chroot $root yum install sudo -y
 	echo "%wheel ALL=(ALL) NOPASSWD: ALL" | sudo tee $root/etc/sudoers.d/devel-sudo
+
+	echo "" >> $INVENTORY
 done
 
 echo "Setting ANSIBLE_HOST_KEY_CHECKING=False"
 export ANSIBLE_HOST_KEY_CHECKING=False
 
-ansible all -i $HOSTSFILE -m shell -b -a "uptime"
+ansible all -i $INVENTORY -m shell -b -a "uptime"
 
-echo "Wrote inventory: $HOSTSFILE"
+echo "Wrote inventory: $INVENTORY"
+
+ansible-playbook -i $INVENTORY $DIR/../aepm/site-alveo-solr.yml
+ansible-playbook -i $INVENTORY $DIR/../aepm/site-alveo-sesame.yml
+
+# ansible-playbook -i $INVENTORY aepm/site-alveo-rabbitmq.yml
+# ansible-playbook -i $INVENTORY aepm/site-alveo-pg.yml
