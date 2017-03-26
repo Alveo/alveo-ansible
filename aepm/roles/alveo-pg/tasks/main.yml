@@ -1,5 +1,9 @@
 ---
 
+# Ansible wants /usr/bin/python on bare Xenial
+- name: Install python 2
+  raw: test -e /usr/bin/python || (sudo apt -y update && sudo apt install -y python-minimal)
+
 - include: ./system_dependencies.yml
 
 # TODO: Use the iptables role
@@ -8,60 +12,55 @@
   include_vars: secrets.yml
   no_log: true
   
-- name: Disable iptables
-  command: >
-    iptables -I INPUT -j ACCEPT
-  become: yes
-
-- name: Disable SELinux
-  selinux: >
-    state=disabled
-  become: yes
-
-- name: Setup environment variables in .bashrc
-  template: >
-    src=bashrc.j2
-    dest=/home/devel/.bashrc
-
-# - name: Create Alveo data directory
-#   file: >
-#     path={{postgresql_data_directory}}
-#     state=directory
-#     owner=postgres
-#     group=postgres
-#     mode=0700
+# - name: Disable iptables
+#   command: >
+#     iptables -I INPUT -j ACCEPT
 #   become: yes
 
-- name: Stop Postgres
-  service: >
-    name=postgresql-9.3
-    state=stopped
-  become: yes
+# - name: Disable SELinux
+#   selinux: >
+#     state=disabled
+#   become: yes
 
-- name: Remove old data directory
+- name: Create Alveo data directory
   file: >
-    path=/var/lib/pgsql
-    state=absent
+    path={{postgresql_data_directory}}
+    state=directory
+    owner=postgres
+    group=postgres
+    mode=0700
   become: yes
 
-- name: Set variables in postgres startup script
-  template: >
-    src=postgresql-9.3.j2
-    dest=/etc/init.d/postgresql-9.3
-    owner=root
-    group=root
-  become: yes
+# - name: Stop Postgres
+#   service: >
+#     name=postgresql
+#     state=stopped
+#   become: yes
 
-- name: Initialise the DB
-  command: >
-    service postgresql-9.3 initdb
-  become: yes
+# - name: Remove old data directory
+#   file: >
+#     path=/var/lib/pgsql
+#     state=absent
+#   become: yes
+
+# - name: Set variables in postgres startup script
+#   template: >
+#     src=postgresql-init.j2
+#     dest=/etc/init.d/postgresql
+#     owner=root
+#     group=root
+#   become: yes
+
+# - name: Initialise the DB
+#   command: >
+#     service postgresql initdb
+#   become: yes
 
 # TODO: Copy pg_hba.conf
 
 - name: Start Postgres
   service: >
-    name=postgresql-9.3
+    name=postgresql
     state=started
     enabled=yes
   become: yes
@@ -75,88 +74,3 @@
     name={{postgres.user.name}}
     password={{postgres.user.password}}
     db={{postgres.db}}
-
-- name: Pull alveo source code from git
-  git: >
-    repo={{alveo.repo}}
-    dest={{alveo.home}}
-    version={{alveo.version}}
-    accept_hostkey=yes
-
-- name: Add RVM GPG key
-  command: >
-    gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
-    creates=/home/devel/.rvm
-
-# TODO: Get rid of all this RVM stuff and use
-#       the RbEnv role
-
-- name: Install RVM
-  shell: >
-    \curl -sSL https://get.rvm.io | bash -s stable
-    creates=/home/devel/.rvm
-
-- name: Install Ruby
-  shell: >
-    source /home/devel/.rvm/scripts/rvm &&
-    rvm install ruby-2.1.4
-    creates=/home/devel/.rvm/rubies/ruby-2.1.4
-    executable=/bin/bash
-  become: yes
-
-- name: Set the default gemset
-  shell: >
-    source /home/devel/.rvm/scripts/rvm &&
-    rvm use ruby-2.1.4@hcsvlab --create --default
-    creates=/home/devel/.rvm/gems/ruby-2.1.4@hcsvlab
-    executable=/bin/bash
-
-- name: Install Bundler
-  shell: >
-    source /home/devel/.rvm/scripts/rvm && gem install bundler
-    executable=/bin/bash
-
-- name: Install Bundler
-  shell: >
-    source /home/devel/.rvm/scripts/rvm &&
-    gem install bundler
-    executable=/bin/bash
-    creates=/home/devel/.rvm/gems/ruby-2.1.4@hcsvlab/gems/bundler-1.10.6
-
-- name: Configure installation of pg gem
-  shell: >
-    source /home/devel/.rvm/scripts/rvm &&
-    bundle config build.pg --with-pg-config={{postgresql_bin_directory}}/pg_config
-    executable=/bin/bash
-
-- name: Configure installation of nokogiri gem
-  shell: >
-    source /home/devel/.rvm/scripts/rvm &&
-    bundle config build.nokogiri --use-system-libraries
-    executable=/bin/bash
-    chdir={{alveo.home}}
-
-- name: Install gem bundle
-  shell: >
-    source /home/devel/.rvm/scripts/rvm &&
-    bundle install
-    executable=/bin/bash
-    chdir={{alveo.home}}
-
-- name: Setup the database
-  shell: >
-    source /home/devel/.rvm/scripts/rvm &&
-    RAILS_ENV={{alveo.rails_env}} bundle exec rake db:create db:migrate db:seed db:populate
-    chdir={{alveo.home}}
-    executable=/bin/bash
-  
-- name: Add Phusion repo
-  command: >
-    curl --fail -sSLo /etc/yum.repos.d/passenger.repo https://oss-binaries.phusionpassenger.com/yum/definitions/el-passenger.repo
-  become: yes
-
-- name: Install Passenger
-  yum: >
-    pkg=mod_passenger
-    state=installed
-  sudo: yes

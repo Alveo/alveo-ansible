@@ -1,23 +1,11 @@
 ---
 
 - name: Install required system dependencies
-  yum: >
-    pkg={{item}}
+  apt: >
+    name={{item}}
     state=installed
   become: yes
   with_items:
-    - git
-    - libselinux-python
+    - postgresql
     - python-psycopg2
-    - libxml2
-    - libxml2-devel
-    - libxslt-devel
-    - postgresql93-server
-    - postgresql93-contrib
-    - postgresql93-libs
-    - postgresql93-devel
-    - pygpgme
-    - httpd
-    - httpd-devel
-    - nodejs
-    - npm
+    - libpq-dev

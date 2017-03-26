@@ -1,12 +1,5 @@
 ---
 
-alveo:
-  home: /home/devel/alveo
-  repo: https://github.com/Alveo/hcsvlab.git
-  version: HEAD
-  rails_env: production
-  server: alveo.example.com
-
 postgresql_data_directory: alveo
 postgresql_base_directory: /mnt/data/pgsql
 postgresql_conf_directory: /mnt/data/pgsql/alveo
