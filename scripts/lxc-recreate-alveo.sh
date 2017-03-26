@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# MACHINES="alveo-web alveo-pg alveo-rabbitmq" # alveo-solr alveo-sesame
-MACHINES="alveo-solr alveo-sesame"
+# MACHINES="alveo-web alveo-pg"
+MACHINES="alveo-solr alveo-sesame alveo-rabbitmq"
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 INVENTORY=$DIR/../local.yml
@@ -13,11 +13,14 @@ for m in $MACHINES; do
 
 	# We want CentOS 6 for
 	# CentOS 7 for pg, rabbitmq, 
-	if [ "$m" == "alveo-pg" ]; then
-		sudo lxc-create -n $m -t centos -- -R 7
-	elif [ "$m" == "alveo-rabbitmq" ]; then
+	if [ "$m" == "alveo-pg" ] || [ "$m" == "alveo-rabbitmq" ]; then
+		DIST="ubuntu"
+		sudo lxc-create -n $m -t ubuntu
+	elif [ "$m" == "something else" ]; then
+		DIST="centos"
 		sudo lxc-create -n $m -t centos -- -R 7
 	else
+		DIST="centos"
 		sudo lxc-create -n $m -t centos -- -R 6
 	fi
 
@@ -29,8 +32,9 @@ for m in $MACHINES; do
 		sleep 1
 	done
 
-	pass=$(sudo cat /var/lib/lxc/$m/tmp_root_pass)
-	echo "Temp root password is $pass"
+	# Works with CentOS but not Ubuntu
+	# pass=$(sudo cat /var/lib/lxc/$m/tmp_root_pass)
+	# echo "Temp root password is $pass"
 
 	# Each host gets its own group, and the names match
 	echo "[$m]" >> $INVENTORY
@@ -40,17 +44,23 @@ for m in $MACHINES; do
 
 	# create user
 	sudo chroot $root useradd devel
-	sudo chroot $root usermod -a -G wheel devel
-
+	
 	# ssh key for devel
 	sudo mkdir -p $root/home/devel/.ssh/
 	cat ~/.ssh/id_rsa.pub | sudo tee -a $root/home/devel/.ssh/authorized_keys
-	sudo chroot $root chown -c devel: /home/devel/.ssh/authorized_keys
+	sudo chroot $root chown -cR devel: /home/devel/
 	sudo chroot $root chmod -c 0600   /home/devel/.ssh/authorized_keys
 
-	# Password-less sudo for devel
-	sudo chroot $root yum install sudo -y
-	echo "%wheel ALL=(ALL) NOPASSWD: ALL" | sudo tee $root/etc/sudoers.d/devel-sudo
+	# Password-less sudo for the devel user
+	if [ "$DIST" == "centos" ]; then
+		sudo chroot $root usermod -a -G wheel devel
+		sudo chroot $root yum install sudo -y
+		echo "%wheel ALL=(ALL) NOPASSWD: ALL" | sudo tee $root/etc/sudoers.d/devel-sudo
+	else
+		# sudo chroot $root apt install sudo -y
+		sudo chroot $root adduser devel sudo
+		echo "%sudo ALL=(ALL) NOPASSWD: ALL" | sudo tee $root/etc/sudoers.d/devel-sudo
+	fi
 
 	echo "" >> $INVENTORY
 done
@@ -64,6 +74,5 @@ echo "Wrote inventory: $INVENTORY"
 
 ansible-playbook -i $INVENTORY $DIR/../aepm/site-alveo-solr.yml
 ansible-playbook -i $INVENTORY $DIR/../aepm/site-alveo-sesame.yml
-
-# ansible-playbook -i $INVENTORY aepm/site-alveo-rabbitmq.yml
+ansible-playbook -i $INVENTORY aepm/site-alveo-rabbitmq.yml
 # ansible-playbook -i $INVENTORY aepm/site-alveo-pg.yml

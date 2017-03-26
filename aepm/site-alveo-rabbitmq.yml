@@ -1,6 +1,9 @@
 ---
 
+# Tested against Ubuntu 16.04 Xenial
+
 - hosts: alveo-rabbitmq
+  gather_facts: false
   remote_user: devel
   roles:
     - alveo-rabbitmq

@@ -1,42 +1,42 @@
 ---
 
+- name: Install python 2 for Ansible
+  raw: test -e /usr/bin/python || (sudo apt -y update && sudo apt install -y python-minimal)
+
+- include: ./system_dependencies.yml
+
 - name: Include secrets
   include_vars: secrets.yml
   no_log: true
+ 
+# - name: Disable iptables
+#   command: >
+#     iptables -I INPUT -j ACCEPT
+#   sudo: yes
+# 
+# - name: Download EPEL
+#   get_url: >
+#     url=http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+#     dest={{user.home}}/epel-release-6-8.noarch.rpm
+# 
+# - name: Install EPEL
+#   yum: >
+#     name={{user.home}}/epel-release-6-8.noarch.rpm
+#     state=present
+#   sudo: yes
+#     
+# - name: Download RabbitMQ
+#   get_url: >
+#     url={{rabbitmq.url.path}}/{{rabbitmq.url.basename}}
+#     dest={{user.home}}/{{rabbitmq.url.basename}}
+# 
 
-- name: Disable iptables
-  command: >
-    iptables -I INPUT -j ACCEPT
-  sudo: yes
-
-- name: Download EPEL
-  get_url: >
-    url=http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
-    dest={{user.home}}/epel-release-6-8.noarch.rpm
-
-- name: Install EPEL
-  yum: >
-    name={{user.home}}/epel-release-6-8.noarch.rpm
-    state=present
-  sudo: yes
-    
-- name: Download RabbitMQ
-  get_url: >
-    url={{rabbitmq.url.path}}/{{rabbitmq.url.basename}}
-    dest={{user.home}}/{{rabbitmq.url.basename}}
-
-- name: Install RabbitMQ
-  yum: >
-    name={{user.home}}/{{rabbitmq.url.basename}}
-    state=present
-  sudo: yes
-
-- name: Start RabbitMQ on boot
-  service: >
-    name=rabbitmq-server
-    state=restarted
-    enabled=yes
-  sudo: yes
+# - name: Start RabbitMQ on boot
+#   service: >
+#     name=rabbitmq-server
+#     state=restarted
+#     enabled=yes
+#   sudo: yes
 
 - name: Install RabbitMQ web interface
   command: >
@@ -57,42 +57,38 @@
     write_priv=.*
     tags=administrator
     state=present
-  with_dict: users
+  with_dict: "{{ users }}"
   sudo: yes
 
 - name: Add RVM GPG key
   command: >
     gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
     creates=/home/devel/.rvm
-
-# TODO: Get rid of all this RVM stuff and use
-#       the RbEnv role
-
+ 
 - name: Install RVM
   shell: >
     \curl -sSL https://get.rvm.io | bash -s stable
     creates=/home/devel/.rvm
-
+ 
 - name: Install Ruby
   shell: >
     source /home/devel/.rvm/scripts/rvm &&
     rvm install ruby-2.2.1
     creates=/home/devel/.rvm/rubies/ruby-2.2.1
     executable=/bin/bash
-  become: yes
-
+ 
 - name: Set the default gemset
   shell: >
     source /home/devel/.rvm/scripts/rvm &&
     rvm use ruby-2.2.1@alveo-workers --create --default
     creates=/home/devel/.rvm/gems/ruby-2.2.1@alveo-workers
     executable=/bin/bash
-
+ 
 - name: Install Bundler
   shell: >
     source /home/devel/.rvm/scripts/rvm && gem install bundler
     executable=/bin/bash
-
+ 
 - name: Install Bundler
   shell: >
     source /home/devel/.rvm/scripts/rvm &&
@@ -113,10 +109,9 @@
 #     executable=/bin/bash
 #     chdir={{alveo.home}}
 
-- name: Install gem bundle
-  shell: >
-    source /home/devel/.rvm/scripts/rvm &&
-    bundle install
-    executable=/bin/bash
-    chdir={{workers.home}}
-
+# - name: Install gem bundle
+#   shell: >
+#     source /home/devel/.rvm/scripts/rvm &&
+#     bundle install
+#     executable=/bin/bash
+#     chdir={{workers.home}}
