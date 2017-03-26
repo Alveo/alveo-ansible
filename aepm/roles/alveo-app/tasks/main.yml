@@ -1,0 +1,100 @@
+---
+
+- include: ./system_dependencies.yml
+  
+- name: Disable iptables
+  command: >
+    iptables -I INPUT -j ACCEPT
+  become: yes
+
+- name: Disable SELinux
+  selinux: >
+    state=disabled
+  become: yes
+
+- name: Setup environment variables in .bashrc
+  template: >
+    src=bashrc.j2
+    dest=/home/devel/.bashrc
+
+- name: Pull alveo source code from git
+  git: >
+    repo={{alveo.repo}}
+    dest={{alveo.home}}
+    version={{alveo.version}}
+    accept_hostkey=yes
+
+- name: Add RVM GPG key
+  command: >
+    gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+    creates=/home/devel/.rvm
+
+- name: Install RVM
+  shell: >
+    \curl -sSL https://get.rvm.io | bash -s stable
+    creates=/home/devel/.rvm
+
+- name: Install Ruby
+  shell: >
+    source /home/devel/.rvm/scripts/rvm &&
+    rvm install ruby-2.1.4
+    creates=/home/devel/.rvm/rubies/ruby-2.1.4
+    executable=/bin/bash
+  become: yes
+
+- name: Set the default gemset
+  shell: >
+    source /home/devel/.rvm/scripts/rvm &&
+    rvm use ruby-2.1.4@hcsvlab --create --default
+    creates=/home/devel/.rvm/gems/ruby-2.1.4@hcsvlab
+    executable=/bin/bash
+
+- name: Install Bundler
+  shell: >
+    source /home/devel/.rvm/scripts/rvm && gem install bundler
+    executable=/bin/bash
+
+- name: Install Bundler
+  shell: >
+    source /home/devel/.rvm/scripts/rvm &&
+    gem install bundler
+    executable=/bin/bash
+    creates=/home/devel/.rvm/gems/ruby-2.1.4@hcsvlab/gems/bundler-1.10.6
+
+- name: Configure installation of pg gem
+  shell: >
+    source /home/devel/.rvm/scripts/rvm &&
+    bundle config build.pg --with-pg-config={{postgresql_bin_directory}}/pg_config
+    executable=/bin/bash
+
+- name: Configure installation of nokogiri gem
+  shell: >
+    source /home/devel/.rvm/scripts/rvm &&
+    bundle config build.nokogiri --use-system-libraries
+    executable=/bin/bash
+    chdir={{alveo.home}}
+
+- name: Install gem bundle
+  shell: >
+    source /home/devel/.rvm/scripts/rvm &&
+    bundle install
+    executable=/bin/bash
+    chdir={{alveo.home}}
+
+- name: Setup the database
+  shell: >
+    source /home/devel/.rvm/scripts/rvm &&
+    RAILS_ENV={{alveo.rails_env}} bundle exec rake db:create db:migrate db:seed db:populate
+    chdir={{alveo.home}}
+    executable=/bin/bash
+  
+- name: Add Phusion repo
+  command: >
+    curl --fail -sSLo /etc/yum.repos.d/passenger.repo https://oss-binaries.phusionpassenger.com/yum/definitions/el-passenger.repo
+  become: yes
+
+- name: Install Passenger
+  yum: >
+    pkg=mod_passenger
+    state=installed
+  sudo: yes
