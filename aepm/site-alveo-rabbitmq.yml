@@ -1,6 +1,6 @@
 ---
 
-# Tested against Ubuntu 16.04 Xenial
+# Tested against minimal Ubuntu Xenial 16.04 LTS 
 
 - hosts: alveo-rabbitmq
   gather_facts: false

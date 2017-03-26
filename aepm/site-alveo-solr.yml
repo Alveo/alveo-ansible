@@ -1,5 +1,7 @@
 ---
 
+# Tested against CentOS 6
+
 - hosts: alveo-solr
   remote_user: devel
   roles:

@@ -1,5 +1,7 @@
 ---
 
+# Tested against CentOS 6
+
 - hosts: alveo-sesame
   remote_user: devel
   roles:
