@@ -1,0 +1,9 @@
+---
+
+# Tested against minimal Ubuntu Xenial 16.04 LTS 
+
+- hosts: alveo-activemq
+  gather_facts: false
+  remote_user: devel
+  roles:
+    - alveo-activemq

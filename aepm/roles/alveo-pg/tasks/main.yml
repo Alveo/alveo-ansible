@@ -31,11 +31,11 @@
     mode=0700
   become: yes
 
-# - name: Stop Postgres
-#   service: >
-#     name=postgresql
-#     state=stopped
-#   become: yes
+- name: Stop Postgres
+  service: >
+    name=postgresql
+    state=stopped
+  become: yes
 
 # - name: Remove old data directory
 #   file: >
@@ -56,7 +56,33 @@
 #     service postgresql initdb
 #   become: yes
 
-# TODO: Copy pg_hba.conf
+- name: Trust local Postgres clients
+  lineinfile: >
+    dest=/etc/postgresql/9.5/main/pg_hba.conf
+    line="local all all trust"
+    regexp='^local .*'
+  become: true
+
+- name: Trust ipv4 Postgres clients on loopback
+  lineinfile: >
+    dest=/etc/postgresql/9.5/main/pg_hba.conf
+    line="host all all 127.0.0.1/32 password"
+    regexp='^host.*all.*all.*127.*'
+  become: true
+
+- name: Trust ipv4 Postgres clients from app server
+  lineinfile: >
+    dest=/etc/postgresql/9.5/main/pg_hba.conf
+    line="host all all 10.0.3.1/32 password"
+    regexp='^host.*all.*all.*10.*'
+  become: true
+
+- name: Trust ipv6 Postgres clients
+  lineinfile: >
+    dest=/etc/postgresql/9.5/main/pg_hba.conf
+    line="host all all ::1/128 password"
+    regexp='^host.*::.*'
+  become: true
 
 - name: Start Postgres
   service: >

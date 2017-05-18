@@ -43,8 +43,8 @@ alveo_catalina_home: /usr/share/tomcat6
 alveo_solr_home: /home/devel/solr
 alveo_activemq_home: /home/devel/apache-activemq-{{ activemq_version }}
 
-activemq_version: 5.8.0
-activemq_download_url: http://archive.apache.org/dist/activemq/apache-activemq/5.8.0/apache-activemq-5.8.0-bin.tar.gz
+activemq_version: 5.14.4
+activemq_download_url: http://mirror.ventraip.net.au/apache//activemq/5.14.4/apache-activemq-5.14.4-bin.tar.gz
 
 tomcat6_java_opts:
   - "-XX:+CMSClassUnloadingEnabled"

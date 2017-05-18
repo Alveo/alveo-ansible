@@ -1,0 +1,11 @@
+---
+
+- name: Install python 2 for Ansible
+  raw: test -e /usr/bin/python || (sudo apt -y update && sudo apt install -y python-minimal)
+
+- include: ./system_dependencies.yml
+
+- name: Include secrets
+  include_vars: secrets.yml
+  no_log: true
+ 
